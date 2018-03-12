@@ -116,14 +116,14 @@ def writeReports(data, reportsPath, targetName):
   sortedCats = sorted(data['cats'].items(), key=getSize, reverse=True)
   for fileInfo in sortedCats:
     fileCat = fileInfo[0]
-    summaryFile.write(fileCat + ": " + "{:,}".format(data['cats'][fileCat]['count']) + " (" + humanize.naturalsize(data['cats'][fileCat]['size'], gnu=True) + ")\n")
+    summaryFile.write(fileCat + ": " + "{:,}".format(data['cats'][fileCat]['count']) + " (" + humanize.naturalsize(data['cats'][fileCat]['size'], gnu=True) + "), MAX " + humanize.naturalsize(max(data['cats'][fileCat]['sizes']), gnu=True) + "\n")
   
   summaryFile.write("\nFILE EXTENSIONS:\n")
 
   sortedTypes = sorted(data['types'].items(), key=getSize, reverse=True)
   for fileInfo in sortedTypes:
     fileType = fileInfo[0]
-    summaryFile.write(fileType + ": " + "{:,}".format(data['types'][fileType]['count']) + " (" + humanize.naturalsize(data['types'][fileType]['size'], gnu=True) + ")\n")
+    summaryFile.write(fileType + ": " + "{:,}".format(data['types'][fileType]['count']) + " (" + humanize.naturalsize(data['types'][fileType]['size'], gnu=True) + "), MAX " + humanize.naturalsize(max(data['types'][fileType]['sizes']), gnu=True) + "\n")
     
   for folder in data['dirs']:
     if (folder == 'root'):
@@ -258,7 +258,7 @@ else:
   with open(os.path.join(reportsPath, '_cache.json'), 'r') as cacheFile:
     data = json.load(cacheFile)
     if ((data is None) or ('count' not in data)):
-        data = {'count': 0, 'size': 0, 'dirs': {}, 'types': {}, 'cats': {}}
+      data = {'count': 0, 'size': 0, 'dirs': {}, 'types': {}, 'cats': {}}
 
 # Walk all non-folder objects in the base folder first
 if ('root' not in data['dirs']):
@@ -332,7 +332,8 @@ for obj in os.listdir(targetPath):
   # delete the cache JSON file (or delete the folder's entry in the cache JSON,
   # if you're feeling ambitious)
   if (thisPath in data['dirs']):
-    print("File counts already in cache, skipping for " + str(targetPath))
+    print("File counts already in cache, skipping for " + thisPath)
+    writeReports(data, reportsPath, targetName)
     continue
   
   print("Counting all files (including subfdirs) in " + str(targetPath))
