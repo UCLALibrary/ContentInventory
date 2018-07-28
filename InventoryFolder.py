@@ -30,8 +30,9 @@ fCats = {'mp3':  'audio',
 'pps':  'powerpoint',
 'ppt':  'powerpoint',
 'xls':  'speadsheet',
-'doc':  'text',
-'docx':  'text',
+'doc':  'word',
+'docx':  'word',
+'md':  'markup',
 'rtf':  'text',
 'txt':  'text',
 'asf':  'video',
@@ -107,26 +108,26 @@ def writeReports(data, reportsPath, targetName):
 
   summaryFile.write('TOTAL FILES: ' + "{:,}".format(data['count']) + "\n")
   summaryFile.write('SPACE USED: ' + humanize.naturalsize(data['size'], gnu=True) + "\n")
-  
-  summaryFile.write("\nFILE TYPES:\n")
 
   def getSize(item):
     return item[1]['size']
-  
+
+  summaryFile.write("\nFILE TYPES:\n")
+
   sortedCats = sorted(data['cats'].items(), key=getSize, reverse=True)
   for fileInfo in sortedCats:
     fileCat = fileInfo[0]
     summaryFile.write(fileCat + ": " + "{:,}".format(data['cats'][fileCat]['count']) + " (" + humanize.naturalsize(data['cats'][fileCat]['size'], gnu=True) + "), MAX " + humanize.naturalsize(max(data['cats'][fileCat]['sizes']), gnu=True) + "\n")
-  
+
   summaryFile.write("\nFILE EXTENSIONS:\n")
 
   sortedTypes = sorted(data['types'].items(), key=getSize, reverse=True)
   for fileInfo in sortedTypes:
     fileType = fileInfo[0]
     summaryFile.write(fileType + ": " + "{:,}".format(data['types'][fileType]['count']) + " (" + humanize.naturalsize(data['types'][fileType]['size'], gnu=True) + "), MAX " + humanize.naturalsize(max(data['types'][fileType]['sizes']), gnu=True) + "\n")
-    
+
   for folder in data['dirs']:
-    if (folder == 'root'):
+    if (folder == '_root'):
       summaryFile.write("\nFILES IN ROOT FOLDER ONLY\n\n")
     else:
       summaryFile.write("\nSUB-FOLDER " + folder + "\n\n")
@@ -137,7 +138,7 @@ def writeReports(data, reportsPath, targetName):
 
     summaryFile.write('TOTAL FILES: ' + "{:,}".format(data['dirs'][folder]['count']) + "\n")
     summaryFile.write('SPACE USED: ' + humanize.naturalsize(data['dirs'][folder]['size'], gnu=True) + "\n")
-  
+
     summaryFile.write("\nFILE TYPES:\n")
 
     sortedCats = sorted(data['dirs'][folder]['cats'].items(), key=getSize, reverse=True)
@@ -145,7 +146,7 @@ def writeReports(data, reportsPath, targetName):
     for fileInfo in sortedCats:
       fileCat = fileInfo[0]
       summaryFile.write(fileCat + ": " + "{:,}".format(data['dirs'][folder]['cats'][fileCat]['count']) + " (" + humanize.naturalsize(data['dirs'][folder]['cats'][fileCat]['size'], gnu=True) + ")\n")
-    
+
     summaryFile.write("\nFILE EXTENSIONS:\n")
 
     sortedTypes = sorted(data['dirs'][folder]['types'].items(), key=getSize, reverse=True)
@@ -153,18 +154,18 @@ def writeReports(data, reportsPath, targetName):
     for fileInfo in sortedTypes:
       fileType = fileInfo[0]
       summaryFile.write(fileType + ": " + "{:,}".format(data['dirs'][folder]['types'][fileType]['count']) + " (" + humanize.naturalsize(data['dirs'][folder]['types'][fileType]['size'], gnu=True) + ")\n")
-    
+
     folderFile.write("SUB-FOLDER " + folder + "\n\n")
     folderFile.write('TOTAL FILES: ' + "{:,}".format(data['dirs'][folder]['count']) + "\n")
     folderFile.write('SPACE USED: ' + humanize.naturalsize(data['dirs'][folder]['size'], gnu=True) + "\n")
-    
+
     folderFile.write("\nFILE TYPES:\n")
 
     sortedCats = sorted(data['dirs'][folder]['cats'].items(), key=getSize, reverse=True)
     for fileInfo in sortedCats:
       fileCat = fileInfo[0]
       folderFile.write(fileCat + ": " + "{:,}".format(data['dirs'][folder]['cats'][fileCat]['count']) + " (" + humanize.naturalsize(data['dirs'][folder]['cats'][fileCat]['size'], gnu=True) + ")\n")
-  
+
     folderFile.write("\nFILE EXTENSIONS:\n")
 
     sortedTypes = sorted(data['dirs'][folder]['types'].items(), key=getSize, reverse=True)
@@ -175,10 +176,25 @@ def writeReports(data, reportsPath, targetName):
 
     folderFile.close()
 
+  # Include actual file sizes (for building histograms) by type and extension
+  summaryFile.write("\nALL SIZES BY FILE TYPE:\n")
+
+  sortedCats = sorted(data['cats'].items(), key=getSize, reverse=True)
+  for fileInfo in sortedCats:
+    fileCat = fileInfo[0]
+    summaryFile.write(fileCat + ": " + " ".join(map(str, sorted(data['cats'][fileCat]['sizes'], reverse=True))) + "\n")
+
+  summaryFile.write("\nALL SIZES BY FILE EXTENSION:\n")
+
+  sortedTypes = sorted(data['types'].items(), key=getSize, reverse=True)
+  for fileInfo in sortedTypes:
+    fileType = fileInfo[0]
+    summaryFile.write(fileType + ": " + " ".join(map(str, sorted(data['types'][fileType]['sizes'], reverse=True))) + "\n")
+
   summaryFile.close()
 
 def countFile(filepath):
-  
+
   targetFile = filepath.split(os.sep)[-1]
 
   #print("Counting file " + targetFile)
@@ -191,9 +207,10 @@ def countFile(filepath):
     if (fileType in fCats):
       fileCat = fCats[fileType]
     else:
-      print("Uncategorized file extension: " + fileType)
+      print("WARNING: Uncategorized file extension: " + fileType)
       fileCat = 'misc'
   #fullFilepath = os.path.realpath(filepath)
+  fileSize = 0
   try:
     fileSize = os.path.getsize(filepath)
   except:
@@ -211,10 +228,10 @@ def walkPath(targetPath):
       #print os.path.join(dirpath, thisFile)
       filepath = dirpath + os.sep + thisFile
 
-      fileInfo = countFile(filepath)
-      fileType = fileInfo['fileType']
-      fileCat = fileInfo['fileCat']
-      fileSize = fileInfo['fileSize']
+      fileStats = countFile(filepath)
+      fileType = fileStats['fileType']
+      fileCat = fileStats['fileCat']
+      fileSize = fileStats['fileSize']
 
       if (fileType not in localStats['types']):
         localStats['types'][fileType] = {'count': 1, 'size': fileSize, 'sizes': [fileSize]}
@@ -235,6 +252,8 @@ def walkPath(targetPath):
       localStats['sizes'].append(fileSize)
 
   return localStats
+
+# MAIN
 
 if (len(sys.argv) > 1):
   targetDir = sys.argv[1]
@@ -261,19 +280,21 @@ else:
       data = {'count': 0, 'size': 0, 'dirs': {}, 'types': {}, 'cats': {}}
 
 # Walk all non-folder objects in the base folder first
-if ('root' not in data['dirs']):
+# XXX Note that because '_root' is already taken, a folder named '_root'
+# won't be counted! Too bad.
+if ('_root' not in data['dirs']):
 
   print("Counting files in root folder " + str(targetPath))
-  data['dirs']['root'] = {'count': 0, 'size': 0, 'types': {}, 'cats': {}}
+  data['dirs']['_root'] = {'count': 0, 'size': 0, 'types': {}, 'cats': {}}
 
   for obj in os.listdir(targetPath):
 
     objPath = os.path.join(targetPath, obj)
     if (not os.path.isdir(objPath)):
-      fileInfo = countFile(objPath)
-      fileCat = fileInfo['fileCat']
-      fileType = fileInfo['fileType']
-      fileSize = fileInfo['fileSize']
+      fileStats = countFile(objPath)
+      fileCat = fileStats['fileCat']
+      fileType = fileStats['fileType']
+      fileSize = fileStats['fileSize']
 
       # Global counts for the entire tree
       if (fileType not in data['types']):
@@ -294,22 +315,22 @@ if ('root' not in data['dirs']):
       data['size'] += fileSize
 
       # Counts for the root folder only
-      if (fileType not in data['dirs']['root']['types']):
-        data['dirs']['root']['types'][fileType] = {'count': 1, 'size': fileSize, 'sizes': [fileSize]}
+      if (fileType not in data['dirs']['_root']['types']):
+        data['dirs']['_root']['types'][fileType] = {'count': 1, 'size': fileSize, 'sizes': [fileSize]}
       else:
-        data['dirs']['root']['types'][fileType]['count'] += 1
-        data['dirs']['root']['types'][fileType]['size'] += fileSize
-        data['dirs']['root']['types'][fileType]['sizes'].append(fileSize)
+        data['dirs']['_root']['types'][fileType]['count'] += 1
+        data['dirs']['_root']['types'][fileType]['size'] += fileSize
+        data['dirs']['_root']['types'][fileType]['sizes'].append(fileSize)
 
-      if (fileCat not in data['dirs']['root']['cats']):
-        data['dirs']['root']['cats'][fileCat] = {'count': 1, 'size': fileSize, 'sizes': [fileSize]}
+      if (fileCat not in data['dirs']['_root']['cats']):
+        data['dirs']['_root']['cats'][fileCat] = {'count': 1, 'size': fileSize, 'sizes': [fileSize]}
       else:
-        data['dirs']['root']['cats'][fileCat]['count'] += 1
-        data['dirs']['root']['cats'][fileCat]['size'] += fileSize
-        data['dirs']['root']['cats'][fileCat]['sizes'].append(fileSize)
+        data['dirs']['_root']['cats'][fileCat]['count'] += 1
+        data['dirs']['_root']['cats'][fileCat]['size'] += fileSize
+        data['dirs']['_root']['cats'][fileCat]['sizes'].append(fileSize)
 
-      data['dirs']['root']['count'] += 1
-      data['dirs']['root']['size'] += fileSize
+      data['dirs']['_root']['count'] += 1
+      data['dirs']['_root']['size'] += fileSize
 
   with open(os.path.join(reportsPath, '_cache.json'), 'w') as cacheFile:
     json.dump(data, cacheFile)
@@ -319,14 +340,14 @@ if ('root' not in data['dirs']):
 # Now count all of the subfolders
 for obj in os.listdir(targetPath):
 
-  # Make a separate report for each 
+  # Make a separate report for each
   objPath = os.path.join(targetPath, obj)
 
   if (not os.path.isdir(objPath)):
     continue
 
   thisPath = str(objPath)
-  
+
   # If data for the folder is already in the cache file, don't re-crawl it
   # Note that this means the only way to refresh the count data is to
   # delete the cache JSON file (or delete the folder's entry in the cache JSON,
@@ -335,18 +356,18 @@ for obj in os.listdir(targetPath):
     print("File counts already in cache, skipping for " + thisPath)
     writeReports(data, reportsPath, targetName)
     continue
-  
+
   print("Counting all files (including subfdirs) in " + str(targetPath))
 
   data['dirs'][thisPath] = {'size': 0, 'count': 0, 'types': {}, 'cats': {}}
 
   print("Walking " + objPath)
   results = walkPath(objPath)
-      
+
   # Global counts for the entire tree
-  data['size'] += results['size'] 
+  data['size'] += results['size']
   data['count'] += results['count']
-      
+
   data['dirs'][thisPath]['count'] += results['count']
   data['dirs'][thisPath]['size'] += results['size']
 
