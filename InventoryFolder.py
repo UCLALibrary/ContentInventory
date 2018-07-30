@@ -15,6 +15,7 @@ fCats = {'mp3':  'audio',
 'wma':  'audio',
 'dwg':  'CAD',
 'bmp':  'image',
+'psd':  'image',
 'eps':  'image',
 'jp2':  'image',
 'jpeg':  'image',
@@ -24,24 +25,30 @@ fCats = {'mp3':  'audio',
 'psd':  'image',
 'tif':  'image',
 'tiff':  'image',
+'nef':  'image',
 'atf': 'text',
 'pdf':  'pdf',
 'pff':  'pdf',
 'pps':  'powerpoint',
 'ppt':  'powerpoint',
-'xls':  'speadsheet',
+'xls':  'spreadsheet',
 'doc':  'word',
 'docx':  'word',
 'md':  'markup',
 'rtf':  'text',
 'txt':  'text',
 'asf':  'video',
+'m4v':  'video',
 'avi':  'video',
+'mod':  'video',
+'webm':  'video',
 'dcr':  'image',
 'f4v':  'video',
+'video':  'video',
 'flv':  'video',
 'gif':  'image',
 'm4a':  'audio',
+'wma':  'audio',
 'mov':  'video',
 'mp4_old':  'video',
 'mp4':  'video',
@@ -50,7 +57,13 @@ fCats = {'mp3':  'audio',
 'ram':  'audio',
 'swf':  'video',
 'wmv':  'video',
+'vob':  'video',
+'mts':  'video',
+'ts':  'video',
 'apf':  'data',
+'xmp':  'data',
+'lrprev':  'data',
+'lrcat':  'data',
 'asp': 'program',
 'asp^language=english': 'program',
 'asp^language=spanish': 'program',
@@ -61,6 +74,8 @@ fCats = {'mp3':  'audio',
 'class':  'program',
 'css':  'markup',
 'cvs':  'error',
+'conf':  'error',
+'props':  'error',
 'dat':  'data',
 'db':  'data',
 'dcl':  'CAD',
@@ -93,7 +108,9 @@ fCats = {'mp3':  'audio',
 'tpl':  'misc',
 'xlsx':  'spreadsheet',
 'xml':  'markup',
-'zip':  'data'
+'zip':  'data',
+'tar':  'data',
+'rar':  'data'
 }
 
 def writeReports(data, reportsPath, targetName):
@@ -177,6 +194,8 @@ def writeReports(data, reportsPath, targetName):
     folderFile.close()
 
   # Include actual file sizes (for building histograms) by type and extension
+  # Can use matplotlib's histogram fuction:
+  # https://stackoverflow.com/questions/5328556/histogram-matplotlib#5328669
   summaryFile.write("\nALL SIZES BY FILE TYPE:\n")
 
   sortedCats = sorted(data['cats'].items(), key=getSize, reverse=True)
@@ -204,8 +223,12 @@ def countFile(filepath):
     fileCat = 'misc'
   else:
     fileType = targetFile.split(".")[-1].lower()
+    modType = fileType.split('^')[0]
     if (fileType in fCats):
       fileCat = fCats[fileType]
+    elif (modType in fCats):
+      fileCat = fCats[modType]
+      fileType = modType
     else:
       print("WARNING: Uncategorized file extension: " + fileType)
       fileCat = 'misc'
